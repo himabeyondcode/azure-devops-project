@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-    name: reyazshaikazuredevopsproject
+    name: himuazuredevopsproject
 spec:
     type: LoadBalancer
     ports:
     - port: 80 
     selector:
-        app: reyazshaikazuredevopsproject
+        app: himuazuredevopsproject
