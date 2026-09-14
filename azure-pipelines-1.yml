@@ -1,33 +1,33 @@
-trigger
+trigger:
 - main
 
-variables
-  imageName demo-app
+variables:
+  imageName: demo-app
 
-stages
-- stage Build
-  jobs
-  - job BuildPush
-    pool
-      name self-hosted-linux
-    steps
-    - task Docker@2
-      inputs
-        containerRegistry 'himudevopsacr'
-        repository $(imageName)
-        command buildAndPush
-        Dockerfile Dockerfile
-        tags latest
+stages:
+- stage: Build
+  jobs:
+  - job: BuildPush
+    pool:
+      name: self-hosted-linux
+    steps:
+    - task: Docker@2
+      inputs:
+        containerRegistry: 'himudevopsacr'
+        repository: $(imageName)
+        command: buildAndPush
+        Dockerfile: Dockerfile
+        tags: latest
 
-- stage Deploy
-  dependsOn Build
-  jobs
-  - job Deploy
-    pool
-      name self-hosted-linux
-    steps
-    - task KubernetesManifest@1
-      inputs
-        action deploy
-        kubernetesServiceConnection 'my-aks-default'
-        manifests k8s-deployment.yaml
+- stage: Deploy
+  dependsOn: Build
+  jobs:
+  - job: Deploy
+    pool:
+      name: self-hosted-linux
+    steps:
+    - task: KubernetesManifest@1
+      inputs:
+        action: deploy
+        kubernetesServiceConnection: 'my-aks-default'
+        manifests: k8s-deployment.yaml
