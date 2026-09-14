@@ -1,79 +1,33 @@
-# Deploy to Azure Kubernetes Service
-# Build and push image to Azure Container Registry; Deploy to Azure Kubernetes Service
-# https://docs.microsoft.com/azure/devops/pipelines/languages/docker
-
-trigger:
+trigger
 - main
 
-resources:
-- repo: self
+variables
+  imageName demo-app
 
-variables:
+stages
+- stage Build
+  jobs
+  - job BuildPush
+    pool
+      name self-hosted-linux
+    steps
+    - task Docker@2
+      inputs
+        containerRegistry 'himudevopsacr'
+        repository $(imageName)
+        command buildAndPush
+        Dockerfile Dockerfile
+        tags latest
 
-  # Container registry service connection established during pipeline creation
-  dockerRegistryServiceConnection: 'a474ac89-aa3a-4f51-86f9-bb045d56184f'
-  imageRepository: 'himabeyondcodeazuredevopsproject2'
-  containerRegistry: 'himuacr.azurecr.io'
-  dockerfilePath: '**/Dockerfile'
-  tag: '$(Build.BuildId)'
-  imagePullSecret: 'himuacr52a8-auth'
-
-  # Agent VM image name
-  vmImageName: 'ubuntu-latest'
-
-
-stages:
-- stage: Build
-  displayName: Build stage
-  jobs:
-  - job: Build
-    displayName: Build
-    pool:
-      vmImage: $(vmImageName)
-    steps:
-    - task: Docker@2
-      displayName: Build and push an image to container registry
-      inputs:
-        command: buildAndPush
-        repository: $(imageRepository)
-        dockerfile: $(dockerfilePath)
-        containerRegistry: $(dockerRegistryServiceConnection)
-        tags: |
-          $(tag)
-
-    - upload: manifests
-      artifact: manifests
-
-- stage: Deploy
-  displayName: Deploy stage
-  dependsOn: Build
-
-  jobs:
-  - deployment: Deploy
-    displayName: Deploy
-    pool:
-      vmImage: $(vmImageName)
-    environment: 'himabeyondcodeazuredevopsproject.default'
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - task: KubernetesManifest@0
-            displayName: Create imagePullSecret
-            inputs:
-              action: createSecret
-              secretName: $(imagePullSecret)
-              dockerRegistryEndpoint: $(dockerRegistryServiceConnection)
-
-          - task: KubernetesManifest@0
-            displayName: Deploy to Kubernetes cluster
-            inputs:
-              action: deploy
-              manifests: |
-                $(Pipeline.Workspace)/manifests/deployment.yml
-                $(Pipeline.Workspace)/manifests/service.yml
-              imagePullSecrets: |
-                $(imagePullSecret)
-              containers: |
-                $(containerRegistry)/$(imageRepository):$(tag)
-
+- stage Deploy
+  dependsOn Build
+  jobs
+  - job Deploy
+    pool
+      name self-hosted-linux
+    steps
+    - task KubernetesManifest@1
+      inputs
+        action deploy
+        kubernetesServiceConnection 'himuks-default'
+        manifests k8s-deployment.yaml
