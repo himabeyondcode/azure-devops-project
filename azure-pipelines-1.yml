@@ -29,5 +29,5 @@ stages
     - task KubernetesManifest@1
       inputs
         action deploy
-        kubernetesServiceConnection 'himuaks-default'
+        kubernetesServiceConnection 'my-aks-default'
         manifests k8s-deployment.yaml
